@@ -1,0 +1,68 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap");
+
+.container {
+  @apply bg-neutral-900 absolute w-full h-auto min-h-full flex;
+  font-family: "Inter", serif;
+  .newPostModal_hidden {
+    @apply hidden;
+  }
+  .newPostModal {
+    @apply fixed w-96 flex border-2 border-neutral-700 flex-col gap-8 left-1/2 top-1/3 transform -translate-x-1/2  bg-neutral-800 p-5 rounded-xl text-neutral-200;
+    .newPostModal_header {
+      @apply text-xl font-bold;
+    }
+    .newPostModal_body {
+      @apply flex flex-col gap-2;
+      input {
+        @apply bg-neutral-800 border-2 border-neutral-700 rounded-md px-5 py-2 focus:border-neutral-500 focus:outline-none appearance-none;
+      }
+      button {
+        @apply text-neutral-100 border-2 border-neutral-700 px-4 py-2 rounded-md hover:bg-neutral-700 transition ease-in-out;
+      }
+    }
+  }
+  .sideBar_left {
+    @apply w-2/12;
+  }
+  .content {
+    @apply w-8/12 bg-neutral-900 p-3 gap-5 flex flex-col;
+    .content_header {
+      @apply bg-neutral-800 p-3 flex gap-3 rounded-xl;
+      button {
+        @apply text-neutral-100 border-2 border-neutral-100 px-4 py-2 rounded-md hover:bg-neutral-100 hover:text-neutral-900 transition ease-in-out;
+      }
+    }
+    .postCounter {
+      @apply text-neutral-600 flex gap-1;
+      .postCounter_num {
+        @apply text-neutral-300;
+      }
+    }
+    .content_postsList {
+      @apply flex flex-col gap-2;
+      .post {
+        @apply flex flex-col bg-neutral-800 gap-3 rounded-xl p-3;
+        .post_header {
+          @apply text-neutral-100 text-xl;
+        }
+        .post_body {
+          @apply text-neutral-300;
+        }
+        .post_buttons {
+          @apply flex gap-3;
+          button {
+            @apply px-2 py-1 text-neutral-100 border-2 border-neutral-700 rounded-md hover:bg-neutral-700 transition ease-in-out;
+          }
+        }
+      }
+    }
+    .content_moreButton {
+      button {
+        @apply px-2 py-1 text-neutral-100 border-2 border-neutral-700 rounded-md hover:bg-neutral-700 transition ease-in-out;
+      }
+    }
+  }
+  .sideBar_right {
+    @apply w-2/12;
+  }
+}
