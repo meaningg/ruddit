@@ -13,6 +13,7 @@ export default function Home() {
   const [text, setText] = useState("");
   const [postsCount, setPostsCount] = useState(0);
   const [postsLazyCount, setPostsLazyCount] = useState(2);
+  const [postData, setPostData] = useState({});
 
   // TODO Разделить все на компоненты
 
@@ -103,10 +104,22 @@ export default function Home() {
         .then((postRef) => {});
     }
   };
-  // Изменение поста TODO: Сделать изменение поста
+  // Изменение поста
   const handleSubmitChangePost = (event) => {
     event.preventDefault();
-    setChangePostModalIsOpen(false);
+    db.ref(`postsTest/${postData.id}`)
+      .update({
+        title: title,
+        text: text,
+        date: postData.date,
+        updated: true,
+        updateDate: Date.now(),
+      })
+      .then((postRef) => {
+        setChangePostModalIsOpen(false);
+        setTitle("");
+        setText("");
+      });
   };
 
   // Удаление поста
@@ -129,6 +142,36 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
+      <div
+        className={changePostModalIsOpen ? styles.changePostModal : "hidden"}
+      >
+        <div className={styles.changePostModal_header}>Изменить пост</div>
+
+        <form
+          className={styles.changePostModal_body}
+          onSubmit={(event) => {
+            handleSubmitChangePost(event);
+          }}
+        >
+          <input
+            onChange={() => {
+              setTitle(event.target.value);
+            }}
+            // placeholder={e}
+            type="text"
+            value={title}
+          />
+          <input
+            onChange={() => {
+              setText(event.target.value);
+            }}
+            // placeholder={}
+            type="text"
+            value={text}
+          />
+          <button type="submit">Изменить</button>
+        </form>
+      </div>
       <div
         className={
           newPostModalIsOpen ? styles.newPostModal : styles.newPostModal_hidden
@@ -159,38 +202,7 @@ export default function Home() {
           <button type="submit">Создать</button>
         </form>
       </div>
-      <div
-        className={
-          changePostModalIsOpen
-            ? styles.newPostModal
-            : styles.newPostModal_hidden
-        }
-      >
-        <div className={styles.newPostModal_header}>Новый пост</div>
 
-        <form
-          className={styles.newPostModal_body}
-          onSubmit={handleSubmitChangePost}
-        >
-          <input
-            onChange={() => {
-              setTitle(event.target.value);
-            }}
-            placeholder="Заголовок"
-            type="text"
-            value={title}
-          />
-          <input
-            onChange={() => {
-              setText(event.target.value);
-            }}
-            placeholder="Текст"
-            type="text"
-            value={text}
-          />
-          <button type="submit">Создать</button>
-        </form>
-      </div>
       <div className={styles.sideBar_left}></div>
       <div className={styles.content}>
         <div className={styles.content_header}>
@@ -235,6 +247,9 @@ export default function Home() {
                   <button
                     onClick={() => {
                       setChangePostModalIsOpen(true);
+                      setTitle(data.title);
+                      setText(data.text);
+                      setPostData(data);
                     }}
                   >
                     Изменить
