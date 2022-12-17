@@ -3,7 +3,10 @@ import { useState } from "react";
 import { AceBaseClient } from "acebase-client";
 import { useEffect } from "react";
 import { uuid } from "uuidv4";
+
 export default function Home() {
+  const initialPostsCount = 10;
+
   const [newPostModalIsOpen, setNewPostModalIsOpen] = useState(false);
   const [changePostModalIsOpen, setChangePostModalIsOpen] = useState(false);
   const [postsIsLoading, setPostsIsLoading] = useState(true);
@@ -12,10 +15,51 @@ export default function Home() {
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const [postsCount, setPostsCount] = useState(0);
-  const [postsLazyCount, setPostsLazyCount] = useState(2);
+  const [postsLazyCount, setPostsLazyCount] = useState(initialPostsCount);
   const [postData, setPostData] = useState({});
 
   // TODO Разделить все на компоненты
+
+  // Подключение к бд при загрузке страницы, первичное получение постов и их кол-ва
+  useEffect(() => {
+    return () => {
+      const db = new AceBaseClient({
+        host: "localhost",
+        port: 5757,
+        dbname: "mydb",
+        https: false,
+      });
+      getPostsCount(db);
+      getPostsList(db);
+      setDb(db);
+
+      db.ready((dbRef) => {
+        db.ref("postsTest")
+          .on("child_added")
+          .subscribe((postSnapshot) => {
+            getMorePosts(db, 0);
+            getPostsCount(db);
+          });
+        db.ref("postsTest")
+          .on("child_removed")
+          .subscribe((postSnapshot) => {
+            getMorePosts(db, 0);
+            getPostsCount(db);
+          });
+        db.ref("postsTest")
+          .on("child_changed")
+          .subscribe((postSnapshot) => {
+            getMorePosts(db, 0);
+          });
+        // db.ref("postsTest")
+        //   .on("value", false)
+        //   .subscribe((postSnapshot) => {
+        //     getMorePosts(db);
+        //     getPostsCount(db);
+        //   });
+      });
+    };
+  }, []);
 
   // получение кол-ва постов
   function getPostsCount(db) {
@@ -26,52 +70,30 @@ export default function Home() {
       });
   }
 
-  // Получение списка постов
-  function getPostsList(db) {
-    db.ref("postsTest")
+  // подгрузить дополнительные посты
+  const getMorePosts = (db, initialPostsCount) => {
+    db.query("postsTest")
+      .take(initialPostsCount + postsLazyCount)
+      .sort("date", false)
       .get()
       .then((snap) => {
-        const posts = [];
-        const data = snap.val();
-        for (let i in data) {
-          posts.push(data[i]);
-        }
-        setPosts(posts);
+        setPosts(snap.getValues());
+        console.log(snap);
+      });
+  };
+
+  // Получение начального списка постов с сортировкой по самым новым
+  function getPostsList(db) {
+    db.query("postsTest")
+      .take(10)
+      .sort("date", false)
+      .get()
+      .then((snap) => {
+        setPosts(snap.getValues());
         setPostsIsLoading(false);
+        console.log(snap);
       });
-
-    // Заготовка под lazy load постов. Ограничение кол-ва запрашиваемых постов с помощью состояния postsLazyCount
-    // db.query("postsTest")
-    //     .take(postsLazyCount)
-    //     .get()
-    //     .then((snap) => {
-    //         setPosts(snap.getValues());
-    //         setPostsIsLoading(false);
-    //     });
   }
-
-  // Подключение к бд при загрузке страницы и первичное получение постов и их кол-ва
-  useEffect(() => {
-    return () => {
-      const db = new AceBaseClient({
-        host: "localhost",
-        port: 5757,
-        dbname: "mydb",
-        https: false,
-      });
-
-      db.ready((dbRef) => {
-        setDb(db);
-      });
-
-      db.ref("postsTest")
-        .on("value", true)
-        .subscribe((postSnapshot) => {
-          getPostsList(db);
-          getPostsCount(db);
-        });
-    };
-  }, []);
 
   // Добавление поста
   const handleSubmitAddPost = (event) => {
@@ -119,9 +141,9 @@ export default function Home() {
         setChangePostModalIsOpen(false);
         setTitle("");
         setText("");
+        setPostData({});
       });
   };
-
   // Удаление поста
   const handleDeletePost = async (id, event) => {
     event.preventDefault();
@@ -136,8 +158,10 @@ export default function Home() {
   // Загрузить больше постов
   const handleLoadMorePosts = (event) => {
     event.preventDefault();
-    // setPostsLazyCount(postsLazyCount + 2);
-    // getPostsList(db);
+    if (postsLazyCount < postsCount) {
+      setPostsLazyCount((prevCount) => prevCount + initialPostsCount);
+      getMorePosts(db, initialPostsCount);
+    }
   };
 
   return (
@@ -157,7 +181,7 @@ export default function Home() {
             onChange={() => {
               setTitle(event.target.value);
             }}
-            // placeholder={e}
+            placeholder={postData.title}
             type="text"
             value={title}
           />
@@ -165,7 +189,7 @@ export default function Home() {
             onChange={() => {
               setText(event.target.value);
             }}
-            // placeholder={}
+            placeholder={postData.text}
             type="text"
             value={text}
           />
@@ -225,22 +249,23 @@ export default function Home() {
               handleAddTestPost();
             }}
           >
-            Тестовый пост
+            Тестовый пост x10
           </button>
         </div>
         <div className={styles.postCounter}>
           Всего постов:
           <div className={styles.postCounter_num}>{postsCount}</div>; Постов на
           странице:
-          <div className={styles.postCounter_num}>{postsLazyCount}</div> - он
-          пиздит, функционал закомменчен;
+          <div className={styles.postCounter_num}>{posts.length};</div>
+          Должно быть постов:
+          <div className={styles.postCounter_num}>{postsLazyCount};</div>
         </div>
         <div className={styles.content_postsList}>
           {postsIsLoading ? (
             <>Loading</>
           ) : (
             posts.map((data) => (
-              <div id={data.id} className={styles.post}>
+              <div key={data.id} className={styles.post}>
                 <div className={styles.post_header}>{data.title}</div>
                 <div className={styles.post_body}>{data.text}</div>
                 <div className={styles.post_buttons}>
@@ -268,7 +293,7 @@ export default function Home() {
         </div>
         <div className={styles.content_moreButton}>
           <button
-            onClick={() => {
+            onClick={(event) => {
               handleLoadMorePosts(event);
             }}
           >
